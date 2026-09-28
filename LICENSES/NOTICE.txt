@@ -1,0 +1,15 @@
+This internal web application uses / is based on the following open-source components.
+
+1. irodori-tts-webgpu
+   Copyright (c) 2026 NOGUCHI Shoji
+   License: MIT License
+   Source: https://github.com/ngc-shj/irodori-tts-webgpu
+
+2. Irodori-TTS / related upstream model components
+   Please retain and review the upstream model/license notices when deploying.
+
+3. llm-jp tokenizer
+   Apache License 2.0 applies to the tokenizer component according to the upstream distribution.
+
+Operational note:
+Do not use reference audio of a real person without appropriate permission. Do not use the system for impersonation or misleading deepfake audio.

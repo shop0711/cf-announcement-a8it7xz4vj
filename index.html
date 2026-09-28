@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="color-scheme" content="light" />
+  <meta name="theme-color" content="#f7f5ef" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="robots" content="noindex,nofollow,noarchive" />
+  <title>店内アナウンス音声作成</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <main class="shell">
+    <header class="hero">
+      <div>
+        <p class="eyebrow">社内用 v0.5</p>
+        <h1>店内アナウンス音声作成</h1>
+        <p class="lead">原稿を入力して、店内放送用の音声を作成します。</p>
+      </div>
+      <div id="deviceBadge" class="badge checking">端末を確認中…</div>
+    </header>
+
+    <section class="notice" id="deviceNotice">
+      <strong>音声生成は、このページを開いている端末内で行います。</strong>
+      <span>初回のみAIモデルを取得します。2回目以降はブラウザのキャッシュを利用します。</span>
+    </section>
+
+    <section class="card">
+      <label class="label" for="text">1. 読み上げる原稿</label>
+      <textarea id="text" maxlength="1200" placeholder="例：ただいまマルシェコーナーでは、北海道フェアを開催しております。">こんにちは。これは店内アナウンス音声のテストです。</textarea>
+      <div class="meta"><span id="charCount">0文字</span><span>長い原稿ほど生成に時間がかかります</span></div>
+    </section>
+
+    <section class="card grid2">
+      <div>
+        <label class="label" for="voiceSelect">2. 使用する声</label>
+        <select id="voiceSelect" class="select"></select>
+        <p id="voiceStatus" class="privacy">標準ボイスを確認しています…</p>
+      </div>
+      <div>
+        <span class="label">3. 生成品質</span>
+        <div class="segmented" role="radiogroup" aria-label="生成品質">
+          <label><input type="radio" name="quality" value="8" checked><span><b>標準</b><small>速度優先</small></span></label>
+          <label><input type="radio" name="quality" value="16"><span><b>高品質</b><small>時間がかかります</small></span></label>
+        </div>
+      </div>
+    </section>
+
+    <details class="diagnostics adminOnly">
+      <summary>管理・テスト用：一時的な参照音声を使う</summary>
+      <div class="adminVoice">
+        <label class="fileBox" for="ref">
+          <span class="fileTitle" id="fileTitle">テスト用音声ファイルを選択</span>
+          <span class="fileHelp">WAV / MP3など。本人の許可を得た音声のみ使用してください。</span>
+        </label>
+        <input id="ref" type="file" accept="audio/*,.wav,.mp3,.m4a,.ogg" hidden />
+      </div>
+    </details>
+
+    <section class="actions">
+      <button id="run" class="primary" disabled>音声を生成</button>
+      <button id="cancelHint" class="secondary" type="button" disabled>生成中はこのページを閉じないでください</button>
+    </section>
+
+    <section id="progressCard" class="card progressCard" hidden>
+      <div class="progressHead"><strong id="progressTitle">準備しています</strong><span id="progressPercent">0%</span></div>
+      <div class="bar"><div id="barInner"></div></div>
+      <p id="progressText">端末を確認しています…</p>
+    </section>
+
+    <section id="result" class="card result" hidden>
+      <div>
+        <p class="eyebrow">生成完了</p>
+        <h2>音声ができました</h2>
+        <p id="resultStats"></p>
+      </div>
+      <audio id="out" controls></audio>
+      <a id="download" class="download" download="announcement.wav">WAVを保存</a>
+    </section>
+
+    <details class="diagnostics">
+      <summary>端末情報・処理ログ</summary>
+      <div class="diagGrid">
+        <div><span>WebGPU</span><b id="gpuSupport">確認中</b></div>
+        <div><span>GPU</span><b id="gpuName">確認中</b></div>
+        <div><span>ブラウザ</span><b id="browserName">確認中</b></div>
+      </div>
+      <pre id="log">起動しました。</pre>
+    </details>
+
+    <footer>
+      <span>社内用 v0.5</span>
+      <span>Powered by Irodori-TTS / irodori-tts-webgpu</span>
+      <a href="./LICENSES/NOTICE.txt" target="_blank" rel="noopener">ライセンス・注意事項</a>
+    </footer>
+  </main>
+  <script type="module" src="./app.mjs"></script>
+</body>
+</html>

@@ -1,0 +1,11 @@
+GitHub Pages setup
+
+1. Create a new PUBLIC repository on GitHub.
+2. Upload every file/folder in this directory to the repository root.
+3. Open repository Settings > Pages.
+4. Under Build and deployment, choose Deploy from a branch.
+5. Branch: main / folder: /(root) > Save.
+6. Wait for GitHub Pages deployment to complete.
+7. Open the generated https://<user>.github.io/<repo>/ URL in Chrome/Safari.
+
+This is link-sharing only, not authentication. Do not upload confidential voice files.

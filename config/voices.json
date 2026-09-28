@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "voices": [
+    {
+      "id": "standard",
+      "name": "標準アナウンスボイス",
+      "description": "全店共通の店内アナウンス用ボイス",
+      "src": "./assets/voices/standard.wav",
+      "enabled": false
+    }
+  ]
+}
