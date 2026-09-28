@@ -14,6 +14,14 @@ const MODELS = {
   text: "text_encoder", speaker: "speaker_encoder", duration: "duration",
   dit: "dit", dac: "dacvae_decoder", enc: "dacvae_encoder",
 };
+const LOW_MEMORY_MODE = /iPad|iPhone|iPod/.test(navigator.userAgent)
+  || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+// Load the largest model first on iPhone/iPad. This avoids keeping three
+// already-created sessions alive while Safari downloads the 701 MB DiT file.
+const LOW_MEMORY_LOAD_ORDER = [
+  ["dit", "dit"], ["dac", "dacvae_decoder"], ["text", "text_encoder"],
+  ["speaker", "speaker_encoder"], ["enc", "dacvae_encoder"], ["duration", "duration"],
+];
 
 const $ = (id) => document.getElementById(id);
 const els = {
@@ -30,6 +38,7 @@ let tokenizer = null;
 let webgpuReady = false;
 let objectUrl = null;
 let voiceConfig = [];
+let gpuAdapter = null;
 
 function log(message) {
   const now = new Date().toLocaleTimeString("ja-JP", { hour12:false });
@@ -61,9 +70,9 @@ async function checkDevice() {
     return;
   }
   try {
-    const adapter = await navigator.gpu.requestAdapter();
-    if (!adapter) throw new Error("GPU adapterを取得できませんでした");
-    const info = adapter.info || {};
+    gpuAdapter = await navigator.gpu.requestAdapter();
+    if (!gpuAdapter) throw new Error("GPU adapterを取得できませんでした");
+    const info = gpuAdapter.info || {};
     const label = [info.vendor, info.architecture, info.device].filter(Boolean).join(" / ") || "WebGPU対応GPU";
     els.gpuSupport.textContent = "対応";
     els.gpuName.textContent = label;
@@ -72,6 +81,9 @@ async function checkDevice() {
     webgpuReady = true;
     updateRunState();
     log(`WebGPU OK: ${label}`);
+    const maxBuffer = Number(gpuAdapter.limits?.maxBufferSize || 0);
+    if (maxBuffer) log(`GPU maxBufferSize: ${(maxBuffer / 1024 / 1024).toFixed(0)}MB`);
+    if (LOW_MEMORY_MODE) log("iPhone/iPad低メモリ読み込みモードを使用します。");
   } catch (e) {
     els.badge.textContent = "GPU確認エラー";
     els.badge.className = "badge bad";
@@ -145,20 +157,38 @@ const sessionOptions = (name, data) => ({
   executionProviders: ["webgpu"], graphOptimizationLevel: "all",
   externalData: [{ path: `${name}.onnx.data`, data }],
 });
+async function createSession(name) {
+  const modelUrl = `${MODEL_BASE}/${name}.onnx`;
+  const dataUrl = `${MODEL_BASE}/${name}.onnx.data`;
+  if (LOW_MEMORY_MODE) {
+    // Let ONNX Runtime fetch the files directly. Avoids the app-level
+    // Response.clone() + ArrayBuffer copies that can exhaust Safari's tab memory.
+    return await ort.InferenceSession.create(modelUrl, sessionOptions(name, dataUrl));
+  }
+  const [model, data] = await Promise.all([fetchCached(modelUrl), fetchCached(dataUrl)]);
+  return await ort.InferenceSession.create(model, sessionOptions(name, data));
+}
+function readableError(error) {
+  const raw = error?.message || String(error);
+  if (LOW_MEMORY_MODE && /load failed|memory|allocation|buffer/i.test(raw)) {
+    return "大容量モデルの通信またはメモリ確保に失敗しました。Wi-Fiへ接続し、Safariを一度閉じてから再度お試しください。繰り返す場合、このiPhoneでは約1.25GBのモデルを端末内実行できません。";
+  }
+  return raw;
+}
 async function loadModel() {
   if (tts) return tts;
-  setProgress(3, "AIモデルを準備しています", "初回はモデルの取得に数分かかることがあります。");
+  setProgress(3, "AIモデルを準備しています", "初回は約1.25GB取得します。Wi-Fi環境でお待ちください。");
+  if (LOW_MEMORY_MODE && "caches" in globalThis) {
+    // Remove incomplete v0.5 downloads; v0.6 relies on normal HTTP caching on iOS.
+    await caches.delete(CACHE_NAME);
+  }
   const sessions = {};
-  const entries = Object.entries(MODELS);
+  const entries = LOW_MEMORY_MODE ? LOW_MEMORY_LOAD_ORDER : Object.entries(MODELS);
   for (let i=0; i<entries.length; i++) {
     const [key, name] = entries[i];
     const started = performance.now();
     setProgress(6 + i * 11, "AIモデルを準備しています", `${i+1}/${entries.length} ${name} を読み込んでいます…`);
-    const [model, data] = await Promise.all([
-      fetchCached(`${MODEL_BASE}/${name}.onnx`),
-      fetchCached(`${MODEL_BASE}/${name}.onnx.data`),
-    ]);
-    sessions[key] = await ort.InferenceSession.create(model, sessionOptions(name, data));
+    sessions[key] = await createSession(name);
     log(`${name}: ${((performance.now()-started)/1000).toFixed(1)}秒`);
   }
   setProgress(74, "AIモデルを準備しています", "日本語処理を準備しています…");
@@ -225,8 +255,9 @@ async function generate() {
     setTimeout(()=>els.result.scrollIntoView({behavior:"smooth",block:"center"}),100);
   } catch(e) {
     log(`ERROR: ${e.stack || e.message || e}`);
-    setProgress(0, "生成できませんでした", e.message || String(e));
-    alert(`音声生成中にエラーが発生しました。\n\n${e.message || e}\n\n下部の「端末情報・処理ログ」を確認してください。`);
+    const message = readableError(e);
+    setProgress(0, "生成できませんでした", message);
+    alert(`音声生成中にエラーが発生しました。\n\n${message}\n\n下部の「端末情報・処理ログ」を確認してください。`);
   } finally {
     updateRunState();
   }

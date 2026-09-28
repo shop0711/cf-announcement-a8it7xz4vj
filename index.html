@@ -10,12 +10,13 @@
   <meta name="robots" content="noindex,nofollow,noarchive" />
   <title>店内アナウンス音声作成</title>
   <link rel="stylesheet" href="./styles.css" />
+  <link rel="stylesheet" href="./fixes.css" />
 </head>
 <body>
   <main class="shell">
     <header class="hero">
       <div>
-        <p class="eyebrow">社内用 v0.5</p>
+        <p class="eyebrow">社内用 v0.6</p>
         <h1>店内アナウンス音声作成</h1>
         <p class="lead">原稿を入力して、店内放送用の音声を作成します。</p>
       </div>
@@ -24,7 +25,7 @@
 
     <section class="notice" id="deviceNotice">
       <strong>音声生成は、このページを開いている端末内で行います。</strong>
-      <span>初回のみAIモデルを取得します。2回目以降はブラウザのキャッシュを利用します。</span>
+      <span>初回は約1.25GBのAIモデルを取得します。Wi-Fi環境でお試しください。</span>
     </section>
 
     <section class="card">
@@ -91,7 +92,7 @@
     </details>
 
     <footer>
-      <span>社内用 v0.5</span>
+      <span>社内用 v0.6</span>
       <span>Powered by Irodori-TTS / irodori-tts-webgpu</span>
       <a href="./LICENSES/NOTICE.txt" target="_blank" rel="noopener">ライセンス・注意事項</a>
     </footer>
