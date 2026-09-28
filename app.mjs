@@ -72,24 +72,37 @@ async function checkDevice() {
   try {
     gpuAdapter = await navigator.gpu.requestAdapter();
     if (!gpuAdapter) throw new Error("GPU adapterを取得できませんでした");
-    const info = gpuAdapter.info || {};
-    const label = [info.vendor, info.architecture, info.device].filter(Boolean).join(" / ") || "WebGPU対応GPU";
+    let label = "WebGPU対応GPU";
+    try {
+      const info = gpuAdapter.info || {};
+      label = [info.vendor, info.architecture, info.device].filter(Boolean).join(" / ") || label;
+    } catch (detailError) {
+      log(`GPU詳細情報を取得できませんでした: ${detailError.message || detailError}`);
+    }
     els.gpuSupport.textContent = "対応";
     els.gpuName.textContent = label;
     els.badge.textContent = "この端末で生成できます";
     els.badge.className = "badge ok";
+    els.badge.title = "";
     webgpuReady = true;
     updateRunState();
     log(`WebGPU OK: ${label}`);
-    const maxBuffer = Number(gpuAdapter.limits?.maxBufferSize || 0);
-    if (maxBuffer) log(`GPU maxBufferSize: ${(maxBuffer / 1024 / 1024).toFixed(0)}MB`);
+    try {
+      const maxBuffer = Number(gpuAdapter.limits?.maxBufferSize || 0);
+      if (maxBuffer) log(`GPU maxBufferSize: ${(maxBuffer / 1024 / 1024).toFixed(0)}MB`);
+    } catch (detailError) {
+      log(`GPU上限値を取得できませんでした: ${detailError.message || detailError}`);
+    }
     if (LOW_MEMORY_MODE) log("iPhone/iPad低メモリ読み込みモードを使用します。");
   } catch (e) {
+    const message = e.message || String(e);
     els.badge.textContent = "GPU確認エラー";
     els.badge.className = "badge bad";
+    els.badge.title = message;
     els.gpuSupport.textContent = "エラー";
-    els.gpuName.textContent = e.message || String(e);
-    log(`WebGPU ERROR: ${e.message || e}`);
+    els.gpuName.textContent = message;
+    document.querySelector(".diagnostics:not(.adminOnly)")?.setAttribute("open", "");
+    log(`WebGPU ERROR: ${message}`);
   }
 }
 
